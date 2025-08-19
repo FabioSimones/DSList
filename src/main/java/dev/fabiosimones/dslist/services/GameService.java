@@ -3,6 +3,7 @@ package dev.fabiosimones.dslist.services;
 import dev.fabiosimones.dslist.dto.GameDTO;
 import dev.fabiosimones.dslist.dto.GameMinDTO;
 import dev.fabiosimones.dslist.entities.Game;
+import dev.fabiosimones.dslist.projections.GameMinProjection;
 import dev.fabiosimones.dslist.repositories.GameRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,12 @@ public class GameService {
     @Transactional(readOnly = true)
     public List<GameMinDTO> findAll(){
         List<Game> result = gameRepository.findAll();
-        List<GameMinDTO> dto = result.stream().map(x -> new GameMinDTO(x)).toList();
-        return dto;
+        return result.stream().map(x -> new GameMinDTO(x)).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<GameMinDTO> findByList(Long listId){
+        List<GameMinProjection> result = gameRepository.searchByList(listId);
+        return result.stream().map(x -> new GameMinDTO(x)).toList();
     }
 }
