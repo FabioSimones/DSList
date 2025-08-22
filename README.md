@@ -1,154 +1,104 @@
-# Projeto DSList - Intensivão Java Spring
+# DSList — Backend (Intensivão Java Spring)
 
-## Modelo de domínio DSList
+Este é o backend do projeto **DSList**, desenvolvido como parte do **Intensivão Java Spring** da DevSuperior. Ele oferece endpoints REST que permitem consultar jogos e gerenciar suas posições dentro de listas.
+
+---
+
+##  Visão Geral
+
+O objetivo deste projeto é servir como referência de como estruturar uma aplicação backend com Spring Boot, utilizando boas práticas como camadas, DTOs, repositórios com queries nativas, e configuração de múltiplos perfis de ambiente (test, dev, prod) :contentReference[oaicite:1]{index=1}.
+
+---
+
+##  Tecnologias Utilizadas
+
+- **Java 17**
+- **Spring Boot** (Web, Data JPA)
+- **Banco de dados H2 (teste)** e **PostgreSQL (desenvolvimento/produção)**
+- Maven
+- Arquivos de configuração (`.properties`)
+- CORS configurado via `WebConfig`
+- Seed de dados via `import.sql`
+- Projeções, queries nativas, endpoints REST
+
+---
+
+##  Estrutura de Perfis (Ambientes)
+
+### **Teste** (`test`)
+- Usa **H2 em memória**
+- Console H2 ativado e logs SQL visíveis  
+- Configurado em `application-test.properties`  
+  :contentReference[oaicite:2]{index=2}
+
+### **Desenvolvimento** (`dev`)
+- Conexão com **PostgreSQL**
+- Detalhes como URL, usuário e senha configurados em `application-dev.properties`
+  :contentReference[oaicite:3]{index=3}
+
+### **Produção** (`prod`)
+- Usa variáveis de ambiente para parâmetros sensíveis (DB_URL, DB_USERNAME, DB_PASSWORD)
+- Configurado em `application-prod.properties`
+  :contentReference[oaicite:4]{index=4}
+
+---
+
+##  Modelagem e Seed de Dados
 
 ![Modelo de domínio DSList](https://raw.githubusercontent.com/devsuperior/java-spring-dslist/main/resources/dslist-model.png)
 
-## Trechos de código
+- **Entidades principais**:
+  - `Game`, `GameList`, e tabela associativa `Belonging`, que define a posição dos jogos nas listas.
+- **Database seeding** com jogos como *Mass Effect Trilogy*, *Red Dead Redemption 2*, *The Witcher 3*, entre outros, inseridos via `import.sql`, com suas posições definidas em `tb_belonging` :contentReference[oaicite:5]{index=5}.
 
-### Plug-in Maven
+---
 
-```xml
-<plugin>
-	<groupId>org.apache.maven.plugins</groupId>
-	<artifactId>maven-resources-plugin</artifactId>
-	<version>3.1.0</version> <!--$NO-MVN-MAN-VER$ -->
-</plugin>
+##  Repositórios com Queries
+
+- **GameRepository**: Query nativa usando `JOIN` entre jogos e pertencimentos, retornando projeções customizadas (GameMinProjection) para otimizar a listagem dos jogos por lista :contentReference[oaicite:6]{index=6}.
+- **GameListRepository**: Query para atualizar a posição de um jogo dentro de uma lista (`UPDATE tb_belonging SET position = ...`) :contentReference[oaicite:7]{index=7}.
+
+---
+
+##  Configuração de CORS
+
+Configurado via `WebConfig`, permitindo requisições de origens como `http://localhost:5173` ou `http://localhost:3000`, visando integração com um frontend separado :contentReference[oaicite:8]{index=8}.
+
+---
+
+##  Como Executar
+
+```bash
+# Clone o repositório
+git clone https://github.com/devsuperior/dslist-backend.git
+cd dslist-backend
+
+# Testes com H2 em memória
+./mvnw spring-boot:run -Dspring-boot.run.profiles=test
+
+# Desenvolvimento com PostgreSQL
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+
+# Produção (variáveis de ambiente configuradas)
+./mvnw spring-boot:run -Dspring-boot.run.profiles=prod
 ```
 
-### application.properties
+---
+## Teste no Postman
 
-```
-spring.profiles.active=${APP_PROFILE:test}
-spring.jpa.open-in-view=false
+### Busca de game pelo ID:
+<img width="1474" height="686" alt="image" src="https://github.com/user-attachments/assets/38a92742-0b6f-4630-84e9-a3f42d1b7eca" />
 
-cors.origins=${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
-```
 
-### application-test.properties
+### Exibindo lista de estilos de games:
+<img width="1480" height="663" alt="image" src="https://github.com/user-attachments/assets/b741e601-361c-4545-a7cc-49010d738dc8" />
 
-```
-# H2 Connection
-spring.datasource.url=jdbc:h2:mem:testdb
-spring.datasource.username=sa
-spring.datasource.password=
 
-# H2 Client
-spring.h2.console.enabled=true
-spring.h2.console.path=/h2-console
+### Exibindo todos os games da lista:
+<img width="1474" height="896" alt="image" src="https://github.com/user-attachments/assets/3e479cee-fe9a-46c4-9678-8fe5c128172f" />
 
-# Show SQL
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.format_sql=true
-```
 
-### application-dev.properties
+### Buscando lista com filtro por estilo do game:
+<img width="1474" height="874" alt="image" src="https://github.com/user-attachments/assets/b57f8d87-9474-4ba1-a9df-b7c68333c844" />
 
-```
-#spring.jpa.properties.jakarta.persistence.schema-generation.create-source=metadata
-#spring.jpa.properties.jakarta.persistence.schema-generation.scripts.action=create
-#spring.jpa.properties.jakarta.persistence.schema-generation.scripts.create-target=create.sql
-#spring.jpa.properties.hibernate.hbm2ddl.delimiter=;
 
-spring.datasource.url=jdbc:postgresql://localhost:5432/dscatalog
-spring.datasource.username=postgres
-spring.datasource.password=1234567
-
-spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.properties.hibernate.jdbc.lob.non_contextual_creation=true
-spring.jpa.hibernate.ddl-auto=none
-```
-
-### application-prod.properties
-```
-spring.datasource.url=${DB_URL}
-spring.datasource.username=${DB_USERNAME}
-spring.datasource.password=${DB_PASSWORD}
-
-spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.properties.hibernate.jdbc.lob.non_contextual_creation=true
-spring.jpa.hibernate.ddl-auto=none
-```
-
-### system.properties
-```
-java.runtime.version=17
-```
-
-### WebConfig
-
-```java
-@Configuration
-public class WebConfig {
-
-	@Value("${cors.origins}")
-	private String corsOrigins;
-	
-	@Bean
-	public WebMvcConfigurer corsConfigurer() {
-		return new WebMvcConfigurer() {
-			@Override
-			public void addCorsMappings(CorsRegistry registry) {
-				registry.addMapping("/**").allowedMethods("*").allowedOrigins(corsOrigins);
-			}
-		};
-	}
-	
-}
-```
-
-### GameRepository
-
-```java
-@Query(nativeQuery = true, value = """
-		SELECT tb_game.id, tb_game.title, tb_game.game_year AS `year`, tb_game.img_url AS imgUrl,
-		tb_game.short_description AS shortDescription, tb_belonging.position
-		FROM tb_game
-		INNER JOIN tb_belonging ON tb_game.id = tb_belonging.game_id
-		WHERE tb_belonging.list_id = :listId
-		ORDER BY tb_belonging.position
-			""")
-List<GameMinProjection> searchByList(Long listId);
-```
-
-### GameListRepository
-
-```java
-@Modifying
-@Query(nativeQuery = true, value = "UPDATE tb_belonging SET position = :newPosition WHERE list_id = :listId AND game_id = :gameId")
-void updateBelongingPosition(Long listId, Long gameId, Integer newPosition);
-```
-
-### import.sql
-
-```sql
-INSERT INTO tb_game_list (name) VALUES ('Aventura e RPG');
-INSERT INTO tb_game_list (name) VALUES ('Jogos de plataforma');
-
-INSERT INTO tb_game (title, score, game_year, genre, platforms, img_url, short_description, long_description) VALUES ('Mass Effect Trilogy', 4.8, 2012, 'Role-playing (RPG), Shooter', 'XBox, Playstation, PC', 'https://raw.githubusercontent.com/devsuperior/java-spring-dslist/main/resources/1.png', 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit esse officiis corrupti unde repellat non quibusdam! Id nihil itaque ipsum!', 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Delectus dolorum illum placeat eligendi, quis maiores veniam. Incidunt dolorum, nisi deleniti dicta odit voluptatem nam provident temporibus reprehenderit blanditiis consectetur tenetur. Dignissimos blanditiis quod corporis iste, aliquid perspiciatis architecto quasi tempore ipsam voluptates ea ad distinctio, sapiente qui, amet quidem culpa.');
-INSERT INTO tb_game (title, score, game_year, genre, platforms, img_url, short_description, long_description) VALUES ('Red Dead Redemption 2', 4.7, 2018, 'Role-playing (RPG), Adventure', 'XBox, Playstation, PC', 'https://raw.githubusercontent.com/devsuperior/java-spring-dslist/main/resources/2.png', 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit esse officiis corrupti unde repellat non quibusdam! Id nihil itaque ipsum!', 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Delectus dolorum illum placeat eligendi, quis maiores veniam. Incidunt dolorum, nisi deleniti dicta odit voluptatem nam provident temporibus reprehenderit blanditiis consectetur tenetur. Dignissimos blanditiis quod corporis iste, aliquid perspiciatis architecto quasi tempore ipsam voluptates ea ad distinctio, sapiente qui, amet quidem culpa.');
-INSERT INTO tb_game (title, score, game_year, genre, platforms, img_url, short_description, long_description) VALUES ('The Witcher 3: Wild Hunt', 4.7, 2014, 'Role-playing (RPG), Adventure', 'XBox, Playstation, PC', 'https://raw.githubusercontent.com/devsuperior/java-spring-dslist/main/resources/3.png', 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit esse officiis corrupti unde repellat non quibusdam! Id nihil itaque ipsum!', 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Delectus dolorum illum placeat eligendi, quis maiores veniam. Incidunt dolorum, nisi deleniti dicta odit voluptatem nam provident temporibus reprehenderit blanditiis consectetur tenetur. Dignissimos blanditiis quod corporis iste, aliquid perspiciatis architecto quasi tempore ipsam voluptates ea ad distinctio, sapiente qui, amet quidem culpa.');
-INSERT INTO tb_game (title, score, game_year, genre, platforms, img_url, short_description, long_description) VALUES ('Sekiro: Shadows Die Twice', 3.8, 2019, 'Role-playing (RPG), Adventure', 'XBox, Playstation, PC', 'https://raw.githubusercontent.com/devsuperior/java-spring-dslist/main/resources/4.png', 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit esse officiis corrupti unde repellat non quibusdam! Id nihil itaque ipsum!', 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Delectus dolorum illum placeat eligendi, quis maiores veniam. Incidunt dolorum, nisi deleniti dicta odit voluptatem nam provident temporibus reprehenderit blanditiis consectetur tenetur. Dignissimos blanditiis quod corporis iste, aliquid perspiciatis architecto quasi tempore ipsam voluptates ea ad distinctio, sapiente qui, amet quidem culpa.');
-INSERT INTO tb_game (title, score, game_year, genre, platforms, img_url, short_description, long_description) VALUES ('Ghost of Tsushima', 4.6, 2012, 'Role-playing (RPG), Adventure', 'XBox, Playstation, PC', 'https://raw.githubusercontent.com/devsuperior/java-spring-dslist/main/resources/5.png', 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit esse officiis corrupti unde repellat non quibusdam! Id nihil itaque ipsum!', 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Delectus dolorum illum placeat eligendi, quis maiores veniam. Incidunt dolorum, nisi deleniti dicta odit voluptatem nam provident temporibus reprehenderit blanditiis consectetur tenetur. Dignissimos blanditiis quod corporis iste, aliquid perspiciatis architecto quasi tempore ipsam voluptates ea ad distinctio, sapiente qui, amet quidem culpa.');
-INSERT INTO tb_game (title, score, game_year, genre, platforms, img_url, short_description, long_description) VALUES ('Super Mario World', 4.7, 1990, 'Platform', 'Super Ness, PC', 'https://raw.githubusercontent.com/devsuperior/java-spring-dslist/main/resources/6.png', 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit esse officiis corrupti unde repellat non quibusdam! Id nihil itaque ipsum!', 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Delectus dolorum illum placeat eligendi, quis maiores veniam. Incidunt dolorum, nisi deleniti dicta odit voluptatem nam provident temporibus reprehenderit blanditiis consectetur tenetur. Dignissimos blanditiis quod corporis iste, aliquid perspiciatis architecto quasi tempore ipsam voluptates ea ad distinctio, sapiente qui, amet quidem culpa.');
-INSERT INTO tb_game (title, score, game_year, genre, platforms, img_url, short_description, long_description) VALUES ('Hollow Knight', 4.6, 2017, 'Platform', 'XBox, Playstation, PC', 'https://raw.githubusercontent.com/devsuperior/java-spring-dslist/main/resources/7.png', 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit esse officiis corrupti unde repellat non quibusdam! Id nihil itaque ipsum!', 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Delectus dolorum illum placeat eligendi, quis maiores veniam. Incidunt dolorum, nisi deleniti dicta odit voluptatem nam provident temporibus reprehenderit blanditiis consectetur tenetur. Dignissimos blanditiis quod corporis iste, aliquid perspiciatis architecto quasi tempore ipsam voluptates ea ad distinctio, sapiente qui, amet quidem culpa.');
-INSERT INTO tb_game (title, score, game_year, genre, platforms, img_url, short_description, long_description) VALUES ('Ori and the Blind Forest', 4, 2015, 'Platform', 'XBox, Playstation, PC', 'https://raw.githubusercontent.com/devsuperior/java-spring-dslist/main/resources/8.png', 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit esse officiis corrupti unde repellat non quibusdam! Id nihil itaque ipsum!', 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Delectus dolorum illum placeat eligendi, quis maiores veniam. Incidunt dolorum, nisi deleniti dicta odit voluptatem nam provident temporibus reprehenderit blanditiis consectetur tenetur. Dignissimos blanditiis quod corporis iste, aliquid perspiciatis architecto quasi tempore ipsam voluptates ea ad distinctio, sapiente qui, amet quidem culpa.');
-INSERT INTO tb_game (title, score, game_year, genre, platforms, img_url, short_description, long_description) VALUES ('Cuphead', 4.6, 2017, 'Platform', 'XBox, Playstation, PC', 'https://raw.githubusercontent.com/devsuperior/java-spring-dslist/main/resources/9.png', 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit esse officiis corrupti unde repellat non quibusdam! Id nihil itaque ipsum!', 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Delectus dolorum illum placeat eligendi, quis maiores veniam. Incidunt dolorum, nisi deleniti dicta odit voluptatem nam provident temporibus reprehenderit blanditiis consectetur tenetur. Dignissimos blanditiis quod corporis iste, aliquid perspiciatis architecto quasi tempore ipsam voluptates ea ad distinctio, sapiente qui, amet quidem culpa.');
-INSERT INTO tb_game (title, score, game_year, genre, platforms, img_url, short_description, long_description) VALUES ('Sonic CD', 4, 1993, 'Platform', 'Sega CD, PC', 'https://raw.githubusercontent.com/devsuperior/java-spring-dslist/main/resources/10.png', 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit esse officiis corrupti unde repellat non quibusdam! Id nihil itaque ipsum!', 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Delectus dolorum illum placeat eligendi, quis maiores veniam. Incidunt dolorum, nisi deleniti dicta odit voluptatem nam provident temporibus reprehenderit blanditiis consectetur tenetur. Dignissimos blanditiis quod corporis iste, aliquid perspiciatis architecto quasi tempore ipsam voluptates ea ad distinctio, sapiente qui, amet quidem culpa.');
-
-INSERT INTO tb_belonging (list_id, game_id, position) VALUES (1, 1, 0);
-INSERT INTO tb_belonging (list_id, game_id, position) VALUES (1, 2, 1);
-INSERT INTO tb_belonging (list_id, game_id, position) VALUES (1, 3, 2);
-INSERT INTO tb_belonging (list_id, game_id, position) VALUES (1, 4, 3);
-INSERT INTO tb_belonging (list_id, game_id, position) VALUES (1, 5, 4);
-
-INSERT INTO tb_belonging (list_id, game_id, position) VALUES (2, 6, 0);
-INSERT INTO tb_belonging (list_id, game_id, position) VALUES (2, 7, 1);
-INSERT INTO tb_belonging (list_id, game_id, position) VALUES (2, 8, 2);
-INSERT INTO tb_belonging (list_id, game_id, position) VALUES (2, 9, 3);
-INSERT INTO tb_belonging (list_id, game_id, position) VALUES (2, 10, 4);
-```
-
-### Script Docker Compose
-
-https://gist.github.com/acenelio/5e40b27cfc40151e36beec1e27c4ff71
